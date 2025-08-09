@@ -1,12 +1,15 @@
 import { Router } from "express";
-import { actualizarPrestamo, crearPrestamo, eliminarPrestamo, obtenerPrestamos, obtenerPrestamosPorId } from "../controllers/prestamos.controllers.js";
+import { actualizarPrestamo, crearPrestamo, eliminarPrestamo, historialPrestamoLibro, obtenerPrestamos, obtenerPrestamosPorId, prestamosActivos, prestamosUsuario } from "../controllers/prestamos.controllers.js";
 
-const router = Router();
+const prestamosRouter = Router();
 
-router.get('/prestamos', obtenerPrestamos);
-router.get('/prestamos/:id_prestamo', obtenerPrestamosPorId);
-router.post('/prestamos', crearPrestamo);
-router.put('/prestamos/:id_prestamo', actualizarPrestamo);
-router.delete('/prestamos/:id_prestamo', eliminarPrestamo);
+prestamosRouter.get('/', obtenerPrestamos);
+prestamosRouter.get('/activos', prestamosActivos);
+prestamosRouter.get('/:id_prestamo', obtenerPrestamosPorId);
+prestamosRouter.get('/historial/:isbn', historialPrestamoLibro);
+prestamosRouter.get('/usuario/:id_usuario', prestamosUsuario);
+prestamosRouter.post('/', crearPrestamo);
+prestamosRouter.put('/:id_prestamo', actualizarPrestamo);
+prestamosRouter.delete('/:id_prestamo', eliminarPrestamo);
 
-export default router;
+export default prestamosRouter;
