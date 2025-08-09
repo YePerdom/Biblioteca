@@ -1,0 +1,9 @@
+{
+  "watch": ["."],
+  "ext": "js,json",
+  "ignore": [
+    "server/data/*",
+    "*.csv"
+  ],
+  "exec": "node server/index.js"
+}
