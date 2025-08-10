@@ -5,7 +5,7 @@ import { pool } from "../config/db.js"
 // GET obtener todos los prestamos
 export const obtenerPrestamos = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM prestamos;');
+        const [rows] = await pool.query('SELECT p.id_prestamo, u.nombre_usuario, u.identificacion_usuario, l.titulo, p.fecha_prestamo, p.fecha_devolucion, p.estado FROM prestamos p LEFT JOIN usuarios u ON p.id_usuario = u.id_usuario LEFT JOIN libros l ON p.isbn = l.isbn;');
         res.status(200).json(rows);
     } catch (error) {
         res.status(500).json({
@@ -21,9 +21,9 @@ export const obtenerPrestamos = async (req, res) => {
 export const obtenerPrestamosPorId = async (req, res) => {
     const { id_prestamo } = req.params;
     try {
-        const [rows] = await pool.query('SELECT * FROM prestamos WHERE id_prestamo = ?;', [id_prestamo]);
+        const [rows] = await pool.query('SELECT p.id_prestamo, u.nombre_usuario, u.identificacion_usuario, l.titulo, p.fecha_prestamo, p.fecha_devolucion, p.estado FROM prestamos p JOIN usuarios u ON p.id_usuario = u.id_usuario JOIN libros l ON p.isbn = l.isbn WHERE id_prestamo = ?;', [id_prestamo]);
         if (rows.length === 0) {
-            return res.status(404).json({ mensaje: 'presatamo no encontrado' });
+            return res.status(404).json({ mensaje: 'préstamo no encontrado' });
         }
         res.status(200).json(rows);
     } catch (error) {
@@ -36,12 +36,44 @@ export const obtenerPrestamosPorId = async (req, res) => {
     }
 };
 
-// POST crear un nuevo prestamo
+// POST crear un nuevo préstamo
 export const crearPrestamo = async (req, res) => {
-    const { id_usuario, isbn, fecha_prestamo, fecha_devolucion, estado } = req.body;
+    const { nombre_usuario, titulo, fecha_prestamo, fecha_devolucion, estado } = req.body;
     try {
+        if (!nombre_usuario || !titulo || !fecha_prestamo || !fecha_devolucion || !estado) {
+            return res.status(400).json({
+                status: "error",
+                mensaje: "Todos los campos son obligatorios",
+                endpoint: req.originalUrl,
+                method: req.method
+            });
+        };
+        //validacion si el usuario exite
+        const [usuario] = await pool.query('SELECT id_usuario FROM usuarios WHERE nombre_usuario = ?;', [nombre_usuario]);
+        if (usuario.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "usuario no encontrado",
+                endpoint: req.originalUrl,
+                method: req.method,
+            });
+        };
+        //validacion si el libro no existe
+        const [libro] = await pool.query('SELECT isbn FROM libros WHERE titulo = ?;', [titulo]);
+        if (libro.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "libro no encontrado",
+                endpoint: req.originalUrl,
+                method: req.method,
+            });
+        };
+        //desestructuracio de objeto para utilizar valores en el insert
+        const [{ id_usuario }] = usuario;
+        const [{ isbn }] = libro;
+        //envio de datos 
         const [result] = await pool.query('INSERT INTO prestamos (id_usuario, isbn, fecha_prestamo, fecha_devolucion, estado) VALUES (?,?,?,?,?);', [id_usuario, isbn, fecha_prestamo, fecha_devolucion, estado]);
-        res.status(201).json({ mensaje: 'prestamo creado', id: result.insertId });
+        res.status(201).json({ mensaje: 'préstamo creado', id: result.insertId });
     } catch (error) {
         res.status(500).json({
             status: "error",
@@ -49,19 +81,19 @@ export const crearPrestamo = async (req, res) => {
             method: req.method,
             error: error.message
         });
-    }
+    };
 };
 
-// PUT actualizar un prestamo
+// PUT actualizar un préstamo
 export const actualizarPrestamo = async (req, res) => {
     const { id_prestamo } = req.params;
     const { id_usuario, isbn, fecha_prestamo, fecha_devolucion, estado } = req.body;
     try {
         const [result] = await pool.query('UPDATE prestamos SET id_usuario = ?, isbn = ?, fecha_prestamo = ?, fecha_devolucion= ?, estado = ? WHERE id_prestamo = ?;', [id_usuario, isbn, fecha_prestamo, fecha_devolucion, estado, id_prestamo]);
         if (result.affectedRows === 0) {
-            res.status(404).json({ mensaje: 'prestamo no encontrado' });
+            res.status(404).json({ mensaje: 'préstamo no encontrado' });
         }
-        res.status(202).json({ mensaje: 'prestamo actualizado' });
+        res.status(202).json({ mensaje: 'préstamo actualizado' });
     } catch (error) {
         res.status(500).json({
             status: "error",
@@ -72,15 +104,20 @@ export const actualizarPrestamo = async (req, res) => {
     }
 };
 
-// DELETE eliminar un prestamo
+// DELETE eliminar un préstamo
 export const eliminarPrestamo = async (req, res) => {
     const { id_prestamo } = req.params;
     try {
         const [result] = await pool.query('DELETE FROM prestamos WHERE id_prestamo = ?;', [id_prestamo]);
         if (result.affectedRows === 0) {
-            res.status(404).json({ mensaje: 'prestamo no encontrado' });
+            res.status(404).json({
+                status: "error",
+                mensaje: 'préstamo no encontrado',
+                endpoint: req.originalUrl,
+                method: req.method,
+            });
         }
-        res.status(200).json({ mensaje: 'prestamo eliminado' });
+        res.status(200).json({ mensaje: 'préstamo eliminado' });
     } catch (error) {
         res.status(500).json({
             status: "error",
@@ -97,7 +134,7 @@ export const eliminarPrestamo = async (req, res) => {
 export const prestamosUsuario = async (req, res) => {
     const { id_usuario } = req.params;
     try {
-        const [rows] = await pool.query( 'SELECT u.id_usuario ID, u.nombre_usuario USUARIO, u.identificacion_usuario IDENTIFICACION, COUNT(p.id_usuario) PRESTAMOS FROM prestamos p JOIN usuarios u ON p.id_usuario = u.id_usuario WHERE u.id_usuario = ? GROUP BY u.id_usuario, u.nombre_usuario, u.identificacion_usuario;', [id_usuario]);
+        const [rows] = await pool.query('SELECT u.id_usuario, u.nombre_usuario, u.identificacion_usuario, COUNT(p.id_usuario) PRÉSTAMOS FROM prestamos p JOIN usuarios u ON p.id_usuario = u.id_usuario WHERE u.id_usuario = ? GROUP BY u.id_usuario, u.nombre_usuario, u.identificacion_usuario;', [id_usuario]);
         res.status(200).json(rows)
     } catch (error) {
         res.status(500).json({
@@ -112,7 +149,7 @@ export const prestamosUsuario = async (req, res) => {
 //GET Listar préstamos que aún están activos
 export const prestamosActivos = async (req, res) => {
     try {
-        const [rows] = await pool.query( 'SELECT p.id_prestamo AS "ID", u.nombre_usuario AS "USUARIO", u.identificacion_usuario AS "IDENTIFICACION", l.titulo AS "TITULO", p.estado AS "ESTADO" FROM prestamos AS p INNER JOIN usuarios AS u ON p.id_usuario = u.id_usuario INNER JOIN libros AS l ON p.isbn = l.isbn WHERE estado = "activo";');
+        const [rows] = await pool.query('SELECT p.id_prestamo, u.nombre_usuario, u.identificacion_usuario, l.titulo, p.fecha_prestamo, p.fecha_devolucion, p.estado FROM prestamos p JOIN usuarios u ON p.id_usuario = u.id_usuario JOIN libros l ON p.isbn = l.isbn WHERE estado = "activo";');
         res.status(200).json(rows)
     } catch (error) {
         res.status(500).json({
@@ -128,7 +165,7 @@ export const prestamosActivos = async (req, res) => {
 export const historialPrestamoLibro = async (req, res) => {
     const { isbn } = req.params;
     try {
-        const [rows] = await pool.query( 'SELECT l.isbn AS "ISBN", l.titulo AS "TITULO", COUNT(p.isbn) AS "PRESTAMOS" FROM prestamos AS p LEFT JOIN libros AS l ON p.isbn = l.isbn WHERE l.isbn = ? GROUP BY l.isbn, l.titulo;', [isbn]);
+        const [rows] = await pool.query('SELECT l.isbn, l.titulo, COUNT(p.isbn) prestamos FROM prestamos p LEFT JOIN libros l ON p.isbn = l.isbn WHERE l.isbn = ? GROUP BY l.isbn, l.titulo;', [isbn]);
         res.status(200).json(rows)
     } catch (error) {
         res.status(500).json({
