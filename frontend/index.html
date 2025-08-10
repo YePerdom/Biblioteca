@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biblioteca</title>
+</head>
+
+<body>
+  <main id="app">
+    <h1>GESTOR DE PRESTAMOS</h1>
+    <form id="prestamos-form">
+      <input type="text" name="nombre_usuario" id="usuario" placeholder="USUARIO"><br><br>
+      <input type="text" name="titulo" id="libro" placeholder="LIBRO"><br><br>
+      <label for="fecha_prestamo">FECHA DE PRÉSTAMO</label><br><br>
+      <input type="date" name="fecha_prestamo" id="fecha-prestamo"><br><br>
+      <label for="fecha_devolucion">FECHA DE DEVOLUCIÓN</label><br><br>
+      <input type="date" name="fecha_devolucion" id="fecha-devolucion"><br><br>
+      <label for="estado">ESTADO</label>
+      <select id="estado" name="estado">
+        <option value="default">--estado--</option>
+        <option value="activo">ACTIVO</option>
+        <option value="entregado">ENTREGADO</option>
+        <option value="retrasado">RETRASADO</option>
+      </select><br><br>
+      <button type="submit">CREAR PRÉSTAMO</button>
+    </form>
+
+
+    <form id="buscador-form">
+      <input type="number" name="buscado" id="buscado" placeholder="BUSCAR">
+      <button type="submit">BUSCAR</button>
+    </form>
+
+
+    <h2>LISTA DE PRÉSTAMOS</h2>
+    <table id="prestamos-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>USUARIO</th>
+          <th>IDENTIFICACIÓN</th>
+          <th>TITULO</th>
+          <th>FECHA DE PRÉSTAMO</th>
+          <th>FECHA DE DEVOLUCIÓN</th>
+          <th>ESTADO</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </main>
+  <script type="module" src="src/main.js"></script>
+</body>
+
+</html>
