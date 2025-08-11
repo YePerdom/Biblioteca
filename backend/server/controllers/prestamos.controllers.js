@@ -21,7 +21,7 @@ export const obtenerPrestamos = async (req, res) => {
 export const obtenerPrestamosPorId = async (req, res) => {
     const { id_prestamo } = req.params;
     try {
-        const [rows] = await pool.query('SELECT p.id_prestamo, u.nombre_usuario, u.identificacion_usuario, l.titulo, p.fecha_prestamo, p.fecha_devolucion, p.estado FROM prestamos p JOIN usuarios u ON p.id_usuario = u.id_usuario JOIN libros l ON p.isbn = l.isbn WHERE id_prestamo = ?;', [id_prestamo]);
+        const [rows] = await pool.query('SELECT p.id_prestamo, u.nombre_usuario, u.identificacion_usuario, l.titulo, p.fecha_prestamo, p.fecha_devolucion, p.estado FROM prestamos p LEFT JOIN usuarios u ON p.id_usuario = u.id_usuario LEFT JOIN libros l ON p.isbn = l.isbn WHERE id_prestamo = ?;', [id_prestamo]);
         if (rows.length === 0) {
             return res.status(404).json({ mensaje: 'préstamo no encontrado' });
         }
@@ -87,8 +87,40 @@ export const crearPrestamo = async (req, res) => {
 // PUT actualizar un préstamo
 export const actualizarPrestamo = async (req, res) => {
     const { id_prestamo } = req.params;
-    const { id_usuario, isbn, fecha_prestamo, fecha_devolucion, estado } = req.body;
+    const { nombre_usuario, titulo, fecha_prestamo, fecha_devolucion, estado } = req.body;
     try {
+        if (!nombre_usuario || !titulo || !fecha_prestamo || !fecha_devolucion || !estado) {
+            return res.status(400).json({
+                status: "error",
+                mensaje: "Todos los campos son obligatorios",
+                endpoint: req.originalUrl,
+                method: req.method
+            });
+        };
+
+        const [usuario] = await pool.query('SELECT id_usuario FROM usuarios WHERE nombre_usuario = ?;', [nombre_usuario]);
+        if (usuario.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "usuario no encontrado",
+                endpoint: req.originalUrl,
+                method: req.method,
+            });
+        };
+
+        const [libro] = await pool.query('SELECT isbn FROM libros WHERE titulo = ?;', [titulo]);
+        if (libro.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "libro no encontrado",
+                endpoint: req.originalUrl,
+                method: req.method,
+            });
+        };
+
+        const [{ id_usuario }] = usuario;
+        const [{ isbn }] = libro;
+
         const [result] = await pool.query('UPDATE prestamos SET id_usuario = ?, isbn = ?, fecha_prestamo = ?, fecha_devolucion= ?, estado = ? WHERE id_prestamo = ?;', [id_usuario, isbn, fecha_prestamo, fecha_devolucion, estado, id_prestamo]);
         if (result.affectedRows === 0) {
             res.status(404).json({ mensaje: 'préstamo no encontrado' });
